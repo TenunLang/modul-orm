@@ -1,0 +1,23 @@
+// Skema / migrasi tabel. Nama tabel/kolom & tipe berasal dari kode (bukan input pengguna).
+
+// CREATE TABLE IF NOT EXISTS tabel (kolom tipe, ...)
+fungsi orm_buat_tabel(s: bulat, tabel: teks, kolom: []teks, tipe: []teks): teks {
+    biar def: teks = "";
+    untuk i dari 0 sampai panjang(kolom) {
+        kalau i > 0 {
+            def = def + ", ";
+        }
+        def = def + kolom[i] + " " + tipe[i];
+    }
+    kembali orm_kueri(s, "CREATE TABLE IF NOT EXISTS " + tabel + " (" + def + ")");
+}
+
+// DROP TABLE IF EXISTS tabel
+fungsi orm_hapus_tabel(s: bulat, tabel: teks): teks {
+    kembali orm_kueri(s, "DROP TABLE IF EXISTS " + tabel);
+}
+
+// ALTER TABLE tabel ADD COLUMN kolom tipe
+fungsi orm_tambah_kolom(s: bulat, tabel: teks, kolom: teks, tipe: teks): teks {
+    kembali orm_kueri(s, "ALTER TABLE " + tabel + " ADD COLUMN " + kolom + " " + tipe);
+}

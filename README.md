@@ -53,6 +53,18 @@ CRUD:
 - `orm_ubah(soket, tabel, setKolom: []teks, setNilai: []teks, whereKolom, whereNilai): teks` — UPDATE.
 - `orm_hapus(soket, tabel, kolom, nilai): teks` — DELETE.
 
+Skema / migrasi:
+
+- `orm_buat_tabel(soket, tabel, kolom: []teks, tipe: []teks): teks` — CREATE TABLE IF NOT EXISTS.
+- `orm_hapus_tabel(soket, tabel): teks` — DROP TABLE IF EXISTS.
+- `orm_tambah_kolom(soket, tabel, kolom, tipe): teks` — ALTER TABLE ADD COLUMN.
+
+Query lanjutan:
+
+- `orm_hitung(soket, tabel): bulat` — COUNT(*).
+- `orm_cari_satu(soket, tabel, kolom, nilai): teks` — WHERE + LIMIT 1.
+- `orm_urut(soket, tabel, kolom, arah, batas): teks` — ORDER BY + LIMIT (`arah` = "ASC"/"DESC").
+
 Query berparameter & baca hasil:
 
 - `orm_jalan(soket, sql, params: []teks): teks` — jalankan SQL dengan placeholder `?` (nilai dikirim terpisah, aman injeksi).
@@ -81,6 +93,8 @@ modul-orm/
     koneksi.tenun     orm_sambung / orm_tutup
     kueri.tenun       orm_jalan / orm_kueri / orm_baris / orm_ambil
     crud.tenun        orm_semua / orm_cari / orm_sisip / orm_ubah / orm_hapus
+    skema.tenun       orm_buat_tabel / orm_hapus_tabel / orm_tambah_kolom
+    query.tenun       orm_hitung / orm_cari_satu / orm_urut
 ```
 
 ## Catatan

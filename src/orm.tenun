@@ -8,3 +8,5 @@ impor "postgres";
 impor "./koneksi.tenun";
 impor "./kueri.tenun";
 impor "./crud.tenun";
+impor "./skema.tenun";
+impor "./query.tenun";
