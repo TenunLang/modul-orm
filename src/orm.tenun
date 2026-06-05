@@ -5,8 +5,8 @@
 impor "mysql";
 impor "postgres";
 
-impor "./koneksi.tenun";
-impor "./kueri.tenun";
-impor "./crud.tenun";
-impor "./skema.tenun";
-impor "./query.tenun";
+impor "./inti/koneksi.tenun";
+impor "./inti/kueri.tenun";
+impor "./crud/crud.tenun";
+impor "./crud/skema.tenun";
+impor "./crud/query.tenun";

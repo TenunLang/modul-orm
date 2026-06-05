@@ -87,15 +87,19 @@ Nama tabel/kolom diambil dari kode, bukan input pengguna.
 
 ```
 modul-orm/
-  tenun.json          (butuh: mysql, postgres)
+  tenun.json            (butuh: mysql, postgres)
   src/
-    orm.tenun         entry — impor mysql, postgres, dan berkas di bawah
-    koneksi.tenun     orm_sambung / orm_tutup
-    kueri.tenun       orm_jalan / orm_kueri / orm_baris / orm_ambil
-    crud.tenun        orm_semua / orm_cari / orm_sisip / orm_ubah / orm_hapus
-    skema.tenun       orm_buat_tabel / orm_hapus_tabel / orm_tambah_kolom
-    query.tenun       orm_hitung / orm_cari_satu / orm_urut
+    orm.tenun           entry — impor mysql, postgres, dan berkas di bawah
+    inti/
+      koneksi.tenun     orm_sambung / orm_tutup
+      kueri.tenun       orm_jalan / orm_kueri / orm_baris / orm_ambil
+    crud/
+      crud.tenun        orm_semua / orm_cari / orm_sisip / orm_ubah / orm_hapus
+      skema.tenun       orm_buat_tabel / orm_hapus_tabel / orm_tambah_kolom
+      query.tenun       orm_hitung / orm_cari_satu / orm_urut
 ```
+
+Impor antar-berkas relatif terhadap berkas pengimpor (mendukung subfolder, mis. `impor "./inti/koneksi.tenun";`).
 
 ## Catatan
 
