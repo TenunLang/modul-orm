@@ -132,7 +132,29 @@ untuk i dari 0 sampai orm_baris(hasil) {
 }
 ```
 
-Fungsi model: `orm_model`, `orm_kolom`, `orm_model_kolom`, `orm_migrasi`, `orm_model_hapus_tabel`, `orm_simpan`, `orm_model_semua`, `orm_model_cari`, `orm_model_hapus`, `orm_baris_peta`. Semua nilai tetap berparameter (aman injeksi); diuji live di MySQL/MariaDB & PostgreSQL.
+### Sinkronisasi, query lanjutan, validasi (ala Sequelize)
+
+```tenun
+biar U: peta = orm_model("pengguna");
+U = orm_kolom(U, "id", "INT PRIMARY KEY AUTO_INCREMENT");
+U = orm_kolom(U, "nama", "VARCHAR(100)");
+U = orm_timestamps(U);          // tambah dibuat_pada/diubah_pada (default CURRENT_TIMESTAMP)
+U = orm_wajib(U, "nama");       // tandai kolom wajib
+
+orm_sinkron(db, U);             // CREATE IF NOT EXISTS (sequelize sync)
+// orm_sinkron_paksa(db, U);    // DROP lalu CREATE (sync force:true) — hapus data
+
+kalau orm_validasi(U, peta{ "nama": "Sri" }) {
+    orm_simpan(db, U, peta{ "nama": "Sri", "umur": "33" });
+}
+
+biar p: peta = orm_model_cari_satu(db, U, "nama", "Sri");   // findOne -> peta
+cetak(orm_model_hitung(db, U));                              // count(*)
+orm_model_ubah(db, U, peta{ "umur": "34" }, "nama", "Sri"); // UPDATE
+cetak(orm_model_ada(db, U, "nama", "Budi"));                 // exists?
+```
+
+Fungsi model: `orm_model`, `orm_kolom`, `orm_model_kolom`, `orm_timestamps`, `orm_wajib`, `orm_validasi`, `orm_sinkron`, `orm_sinkron_paksa`, `orm_migrasi`, `orm_model_hapus_tabel`, `orm_simpan`, `orm_model_semua`, `orm_model_cari`, `orm_model_cari_satu`, `orm_model_hitung`, `orm_model_ada`, `orm_model_ubah`, `orm_model_hapus`, `orm_model_kosongkan`, `orm_baris_peta`. Semua nilai berparameter (aman injeksi); diuji live di MySQL/MariaDB & PostgreSQL (termasuk kolom TIMESTAMP).
 
 ## Catatan
 

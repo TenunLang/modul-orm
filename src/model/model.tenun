@@ -98,3 +98,103 @@ fungsi orm_baris_peta(m: peta, hasil: teks, idx: bulat): peta {
     }
     kembali r;
 }
+
+// ---- Sinkronisasi skema (ala sequelize.sync) ----
+
+// Buat tabel bila belum ada (sync). Sama dengan orm_migrasi.
+fungsi orm_sinkron(s: bulat, m: peta): teks {
+    kembali orm_migrasi(s, m);
+}
+
+// Sync paksa: DROP lalu CREATE (sequelize sync force:true). HATI-HATI: menghapus data.
+fungsi orm_sinkron_paksa(s: bulat, m: peta): teks {
+    orm_model_hapus_tabel(s, m);
+    kembali orm_migrasi(s, m);
+}
+
+// Kolom waktu otomatis (DB-side default). Tambahkan sebelum migrasi.
+fungsi orm_timestamps(m: peta): peta {
+    m = orm_kolom(m, "dibuat_pada", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    m = orm_kolom(m, "diubah_pada", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    kembali m;
+}
+
+// ---- Query model lanjutan ----
+
+// findOne: baris pertama yang cocok sebagai peta (peta kosong bila tak ada).
+fungsi orm_model_cari_satu(s: bulat, m: peta, kolom: teks, nilai: teks): peta {
+    biar hasil: teks = orm_jalan(s, "SELECT " + m["@kolom"] + " FROM " + m["@tabel"] + " WHERE " + kolom + " = ? LIMIT 1", [nilai]);
+    kalau orm_baris(hasil) < 1 {
+        kembali peta{};
+    }
+    kembali orm_baris_peta(m, hasil, 0);
+}
+
+// count(*) tabel model.
+fungsi orm_model_hitung(s: bulat, m: peta): bulat {
+    biar hasil: teks = orm_kueri(s, "SELECT COUNT(*) FROM " + m["@tabel"]);
+    kalau orm_baris(hasil) < 1 {
+        kembali 0;
+    }
+    kembali keBulat(orm_ambil(hasil, 0, 0));
+}
+
+// True bila baris yang cocok ada.
+fungsi orm_model_ada(s: bulat, m: peta, kolom: teks, nilai: teks): bool {
+    biar p: peta = orm_model_cari_satu(s, m, kolom, nilai);
+    kembali petaPunya(p, kolom);
+}
+
+// UPDATE: set kolom dari `baris` (peta) untuk record dengan whereKolom = whereNilai.
+// Hanya kolom model yang ada di `baris` yang di-set; semua nilai berparameter.
+fungsi orm_model_ubah(s: bulat, m: peta, baris: peta, whereKolom: teks, whereNilai: teks): teks {
+    biar kols: []teks = pisah(m["@kolom"], ",");
+    biar setStr: teks = "";
+    biar params: []teks = ["@kosong"];
+    biar mulai: bool = salah;
+    untuk i dari 0 sampai panjang(kols) {
+        biar c: teks = kols[i];
+        kalau petaPunya(baris, c) {
+            kalau mulai {
+                setStr = setStr + ", ";
+                params = dorong(params, baris[c]);
+            } lain {
+                params = [baris[c]];
+                mulai = benar;
+            }
+            setStr = setStr + c + " = ?";
+        }
+    }
+    params = dorong(params, whereNilai);
+    kembali orm_jalan(s, "UPDATE " + m["@tabel"] + " SET " + setStr + " WHERE " + whereKolom + " = ?", params);
+}
+
+// Hapus semua baris tabel model.
+fungsi orm_model_kosongkan(s: bulat, m: peta): teks {
+    kembali orm_kueri(s, "DELETE FROM " + m["@tabel"]);
+}
+
+// ---- Validasi ----
+
+// Tandai kolom wajib diisi.
+fungsi orm_wajib(m: peta, kolom: teks): peta {
+    m["wajib:" + kolom] = "1";
+    kembali m;
+}
+
+// Validasi baris terhadap aturan model (kolom wajib tidak boleh kosong/hilang).
+fungsi orm_validasi(m: peta, baris: peta): bool {
+    biar kols: []teks = pisah(m["@kolom"], ",");
+    untuk i dari 0 sampai panjang(kols) {
+        biar c: teks = kols[i];
+        kalau m["wajib:" + c] == "1" {
+            kalau petaPunya(baris, c) == salah {
+                kembali salah;
+            }
+            kalau panjangTeks(baris[c]) == 0 {
+                kembali salah;
+            }
+        }
+    }
+    kembali benar;
+}
