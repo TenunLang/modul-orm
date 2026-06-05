@@ -1,0 +1,100 @@
+// Definisi model ala Sequelize, dibangun di atas tipe `peta`.
+// Model = peta berisi metadata tabel:
+//   "@tabel"      -> nama tabel
+//   "@kolom"      -> daftar kolom dipisah koma (urutan terjaga)
+//   "tipe:<kol>"  -> tipe SQL kolom
+// Nama tabel/kolom/tipe berasal dari kode (bukan input pengguna). Nilai selalu berparameter.
+
+// Buat model baru untuk sebuah tabel.
+fungsi orm_model(tabel: teks): peta {
+    biar m: peta = peta{};
+    m["@tabel"] = tabel;
+    m["@kolom"] = "";
+    kembali m;
+}
+
+// Tambah definisi kolom (nama + tipe SQL). Kembalikan model agar bisa dirantai.
+fungsi orm_kolom(m: peta, nama: teks, tipe: teks): peta {
+    kalau panjangTeks(m["@kolom"]) > 0 {
+        m["@kolom"] = m["@kolom"] + "," + nama;
+    } lain {
+        m["@kolom"] = nama;
+    }
+    m["tipe:" + nama] = tipe;
+    kembali m;
+}
+
+// Daftar kolom model sebagai []teks.
+fungsi orm_model_kolom(m: peta): []teks {
+    kembali pisah(m["@kolom"], ",");
+}
+
+// CREATE TABLE IF NOT EXISTS dari definisi model.
+fungsi orm_migrasi(s: bulat, m: peta): teks {
+    biar kols: []teks = pisah(m["@kolom"], ",");
+    biar def: teks = "";
+    untuk i dari 0 sampai panjang(kols) {
+        kalau i > 0 {
+            def = def + ", ";
+        }
+        def = def + kols[i] + " " + m["tipe:" + kols[i]];
+    }
+    kembali orm_kueri(s, "CREATE TABLE IF NOT EXISTS " + m["@tabel"] + " (" + def + ")");
+}
+
+// DROP TABLE model.
+fungsi orm_model_hapus_tabel(s: bulat, m: peta): teks {
+    kembali orm_kueri(s, "DROP TABLE IF EXISTS " + m["@tabel"]);
+}
+
+// INSERT satu baris (peta kolom->nilai). Hanya kolom model yang ada di `baris`
+// yang dimasukkan; nilai dikirim berparameter (aman injeksi).
+fungsi orm_simpan(s: bulat, m: peta, baris: peta): teks {
+    biar kols: []teks = pisah(m["@kolom"], ",");
+    biar kolStr: teks = "";
+    biar phStr: teks = "";
+    biar params: []teks = ["@kosong"];   // sentinel, diganti pada kolom pertama
+    biar mulai: bool = salah;
+    untuk i dari 0 sampai panjang(kols) {
+        biar c: teks = kols[i];
+        kalau petaPunya(baris, c) {
+            kalau mulai {
+                kolStr = kolStr + ", ";
+                phStr = phStr + ", ";
+                params = dorong(params, baris[c]);
+            } lain {
+                params = [baris[c]];
+                mulai = benar;
+            }
+            kolStr = kolStr + c;
+            phStr = phStr + "?";
+        }
+    }
+    kembali orm_jalan(s, "INSERT INTO " + m["@tabel"] + " (" + kolStr + ") VALUES (" + phStr + ")", params);
+}
+
+// SELECT semua kolom model (urutan terjaga) dari tabel.
+fungsi orm_model_semua(s: bulat, m: peta): teks {
+    kembali orm_kueri(s, "SELECT " + m["@kolom"] + " FROM " + m["@tabel"]);
+}
+
+// SELECT ... WHERE kolom = nilai (berparameter).
+fungsi orm_model_cari(s: bulat, m: peta, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "SELECT " + m["@kolom"] + " FROM " + m["@tabel"] + " WHERE " + kolom + " = ?", [nilai]);
+}
+
+// DELETE WHERE kolom = nilai (berparameter).
+fungsi orm_model_hapus(s: bulat, m: peta, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "DELETE FROM " + m["@tabel"] + " WHERE " + kolom + " = ?", [nilai]);
+}
+
+// Ambil satu baris hasil sebagai peta kolom->nilai (urutan kolom = urutan model).
+// Gunakan dengan hasil dari orm_model_semua / orm_model_cari.
+fungsi orm_baris_peta(m: peta, hasil: teks, idx: bulat): peta {
+    biar kols: []teks = pisah(m["@kolom"], ",");
+    biar r: peta = peta{};
+    untuk i dari 0 sampai panjang(kols) {
+        r[kols[i]] = orm_ambil(hasil, idx, i);
+    }
+    kembali r;
+}

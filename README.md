@@ -106,14 +106,38 @@ modul-orm/
       query.tenun       orm_hitung / orm_cari_satu / orm_urut
     relasi/
       relasi.tenun      orm_punya_banyak / orm_milik / orm_gabung / orm_gabung_cari
+    model/
+      model.tenun       definisi model (peta): orm_model / orm_kolom / orm_migrasi / orm_simpan / orm_baris_peta
 ```
 
 Impor antar-berkas relatif terhadap berkas pengimpor (mendukung subfolder, mis. `impor "./inti/koneksi.tenun";`).
 
+## Definisi model (ala Sequelize)
+
+Model dibangun dari tipe `peta` bawaan Tenun: tabel + kolom + tipe SQL. Lihat `contoh/model.tenun`.
+
+```tenun
+biar Pengguna: peta = orm_model("pengguna");
+Pengguna = orm_kolom(Pengguna, "id", "INT PRIMARY KEY AUTO_INCREMENT");
+Pengguna = orm_kolom(Pengguna, "nama", "VARCHAR(100)");
+Pengguna = orm_kolom(Pengguna, "umur", "INT");
+
+orm_migrasi(db, Pengguna);                                   // CREATE TABLE IF NOT EXISTS
+orm_simpan(db, Pengguna, peta{ "nama": "Taqin", "umur": "27" });  // INSERT berparameter
+
+biar hasil: teks = orm_model_semua(db, Pengguna);
+untuk i dari 0 sampai orm_baris(hasil) {
+    biar baris: peta = orm_baris_peta(Pengguna, hasil, i);   // baris -> peta kolom:nilai
+    cetak(baris["nama"] + " (" + baris["umur"] + ")");
+}
+```
+
+Fungsi model: `orm_model`, `orm_kolom`, `orm_model_kolom`, `orm_migrasi`, `orm_model_hapus_tabel`, `orm_simpan`, `orm_model_semua`, `orm_model_cari`, `orm_model_hapus`, `orm_baris_peta`. Semua nilai tetap berparameter (aman injeksi); diuji live di MySQL/MariaDB & PostgreSQL.
+
 ## Catatan
 
 - Satu driver aktif per koneksi (disimpan modul). Untuk dua DB beda driver bersamaan, gunakan modul `mysql`/`postgres` langsung.
-- Fitur lanjutan (definisi model, relasi, migrasi, JOIN builder) menyusul.
+- Definisi model, relasi, migrasi, dan CRUD aman sudah tersedia. JOIN builder lanjutan menyusul.
 
 ## Lisensi
 

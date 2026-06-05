@@ -1,0 +1,35 @@
+// Definisi model ala Sequelize memakai tipe `peta`.
+impor "orm";
+
+biar db: bulat = orm_sambung("mysql", "127.0.0.1", 3306, "root", "", "mysql");
+kalau db < 0 {
+    cetak("gagal konek");
+} lain {
+    // Definisikan model (tabel + kolom).
+    biar Pengguna: peta = orm_model("pengguna");
+    Pengguna = orm_kolom(Pengguna, "id", "INT PRIMARY KEY AUTO_INCREMENT");
+    Pengguna = orm_kolom(Pengguna, "nama", "VARCHAR(100)");
+    Pengguna = orm_kolom(Pengguna, "umur", "INT");
+
+    // Migrasi (CREATE TABLE IF NOT EXISTS).
+    orm_migrasi(db, Pengguna);
+
+    // Simpan baris (peta kolom->nilai). Nilai berparameter, aman injeksi.
+    orm_simpan(db, Pengguna, peta{ "nama": "Taqin", "umur": "27" });
+    orm_simpan(db, Pengguna, peta{ "nama": "Budi", "umur": "30" });
+
+    // Ambil semua, baca tiap baris sebagai peta.
+    biar hasil: teks = orm_model_semua(db, Pengguna);
+    biar n: bulat = orm_baris(hasil);
+    untuk i dari 0 sampai n {
+        biar baris: peta = orm_baris_peta(Pengguna, hasil, i);
+        cetak(baris["id"] + " - " + baris["nama"] + " (" + baris["umur"] + ")");
+    }
+
+    // Cari berdasarkan kolom.
+    biar cari: teks = orm_model_cari(db, Pengguna, "nama", "Budi");
+    biar b: peta = orm_baris_peta(Pengguna, cari, 0);
+    cetak("Budi umur " + b["umur"]);
+
+    orm_tutup(db);
+}
