@@ -1,0 +1,17 @@
+impor "orm";
+
+biar db: bulat = orm_sambung("mysql", "127.0.0.1", 3306, "root", "", "mysql");
+kalau db < 0 {
+    cetak("gagal terhubung");
+} lain {
+    orm_kueri(db, "CREATE TEMPORARY TABLE t (id INT, nama VARCHAR(50))");
+    orm_sisip(db, "t", ["id", "nama"], ["1", "Budi"]);
+    orm_sisip(db, "t", ["id", "nama"], ["2", "Ani"]);
+
+    biar h: teks = orm_semua(db, "t");
+    cetak("jumlah baris:");
+    cetak(orm_baris(h));
+    cetak(orm_ambil(h, 0, 1));
+
+    orm_tutup(db);
+}
