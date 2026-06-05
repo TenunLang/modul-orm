@@ -53,16 +53,38 @@ CRUD:
 - `orm_ubah(soket, tabel, setKolom: []teks, setNilai: []teks, whereKolom, whereNilai): teks` — UPDATE.
 - `orm_hapus(soket, tabel, kolom, nilai): teks` — DELETE.
 
-Query bebas & baca hasil:
+Query berparameter & baca hasil:
 
-- `orm_kueri(soket, sql): teks` — jalankan SQL apa pun.
+- `orm_jalan(soket, sql, params: []teks): teks` — jalankan SQL dengan placeholder `?` (nilai dikirim terpisah, aman injeksi).
+- `orm_kueri(soket, sql): teks` — query tanpa parameter. **Hanya untuk SQL tepercaya (DDL, `SELECT *`).** Jangan sisipkan nilai pengguna.
 - `orm_baris(hasil): bulat` — jumlah baris.
 - `orm_ambil(hasil, baris, kolom): teks` — nilai sel (0-indeks).
-- `orm_escape(nilai): teks` — escape nilai sesuai driver.
+
+## Keamanan (anti SQL injection)
+
+Nilai TIDAK pernah digabung mentah ke SQL:
+
+- **PostgreSQL** memakai prepared statement (extended protocol, `$1..`) — nilai dikirim terpisah dari perintah.
+- **MySQL** memakai escape kuat (`\ ' " \n \r NUL Ctrl-Z`) lalu dikutip.
+
+Semua fungsi CRUD memakai jalur berparameter ini. Contoh injeksi `x' OR '1'='1` diperlakukan sebagai literal (0 baris), bukan SQL.
+
+Nama tabel/kolom diambil dari kode, bukan input pengguna.
+
+## Struktur
+
+```
+modul-orm/
+  tenun.json          (butuh: mysql, postgres)
+  src/
+    orm.tenun         entry — impor mysql, postgres, dan berkas di bawah
+    koneksi.tenun     orm_sambung / orm_tutup
+    kueri.tenun       orm_jalan / orm_kueri / orm_baris / orm_ambil
+    crud.tenun        orm_semua / orm_cari / orm_sisip / orm_ubah / orm_hapus
+```
 
 ## Catatan
 
-- Nilai pada CRUD di-escape otomatis. Nama tabel/kolom tidak — jangan ambil dari input pengguna.
 - Satu driver aktif per koneksi (disimpan modul). Untuk dua DB beda driver bersamaan, gunakan modul `mysql`/`postgres` langsung.
 - Fitur lanjutan (definisi model, relasi, migrasi, JOIN builder) menyusul.
 

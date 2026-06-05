@@ -1,89 +1,10 @@
-// Modul ORM untuk Tenun — satu API untuk MySQL & PostgreSQL.
-// Bergantung pada modul: mysql, postgres.
+// Modul ORM untuk Tenun — CRUD aman (berparameter) untuk MySQL & PostgreSQL.
+// Nilai tidak pernah digabung mentah ke SQL: Postgres memakai prepared ($1..),
+// MySQL memakai escape kuat. Pengguna memanggil fungsi CRUD, bukan menulis SQL.
 
 impor "mysql";
 impor "postgres";
 
-// Driver aktif untuk koneksi terkini ("mysql" atau "postgres").
-biar orm_driver: teks = "mysql";
-
-// ---- Koneksi ----
-
-// Sambung. driver = "mysql" | "postgres". Kembalikan handle, atau -1.
-fungsi orm_sambung(driver: teks, inang: teks, port: bulat, pengguna: teks, sandi: teks, db: teks): bulat {
-    orm_driver = driver;
-    kalau driver == "postgres" {
-        kembali pg_sambung(inang, port, pengguna, sandi, db);
-    }
-    biar s: bulat = mysql_sambung(inang, port, pengguna, sandi);
-    kalau s >= 0 {
-        mysql_gunakan(s, db);
-    }
-    kembali s;
-}
-
-fungsi orm_tutup(s: bulat): kosong {
-    kalau orm_driver == "postgres" { pg_tutup(s); } lain { mysql_tutup(s); }
-}
-
-// ---- Eksekusi & baca (dispatch per driver) ----
-
-fungsi orm_kueri(s: bulat, sql: teks): teks {
-    kalau orm_driver == "postgres" { kembali pg_kueri(s, sql); }
-    kembali mysql_perintah(s, sql);
-}
-
-fungsi orm_baris(hasil: teks): bulat {
-    kalau orm_driver == "postgres" { kembali pg_jumlah_baris(hasil); }
-    kembali mysql_jumlah_baris(hasil);
-}
-
-fungsi orm_ambil(hasil: teks, baris: bulat, kolom: bulat): teks {
-    kalau orm_driver == "postgres" { kembali pg_ambil(hasil, baris, kolom); }
-    kembali mysql_ambil(hasil, baris, kolom);
-}
-
-// Escape nilai untuk literal SQL.
-fungsi orm_escape(nilai: teks): teks {
-    kalau orm_driver == "postgres" { kembali ganti(nilai, "'", "''"); }
-    kembali mysql_escape(nilai);
-}
-
-// ---- CRUD ----
-
-// SELECT * FROM tabel
-fungsi orm_semua(s: bulat, tabel: teks): teks {
-    kembali orm_kueri(s, "SELECT * FROM " + tabel);
-}
-
-// SELECT * FROM tabel WHERE kolom = nilai
-fungsi orm_cari(s: bulat, tabel: teks, kolom: teks, nilai: teks): teks {
-    kembali orm_kueri(s, "SELECT * FROM " + tabel + " WHERE " + kolom + " = '" + orm_escape(nilai) + "'");
-}
-
-// INSERT INTO tabel (kolom...) VALUES (nilai...)
-fungsi orm_sisip(s: bulat, tabel: teks, kolom: []teks, nilai: []teks): teks {
-    biar k: teks = "";
-    biar v: teks = "";
-    untuk i dari 0 sampai panjang(kolom) {
-        kalau i > 0 { k = k + ", "; v = v + ", "; }
-        k = k + kolom[i];
-        v = v + "'" + orm_escape(nilai[i]) + "'";
-    }
-    kembali orm_kueri(s, "INSERT INTO " + tabel + " (" + k + ") VALUES (" + v + ")");
-}
-
-// UPDATE tabel SET ... WHERE whereKolom = whereNilai
-fungsi orm_ubah(s: bulat, tabel: teks, setKolom: []teks, setNilai: []teks, whereKolom: teks, whereNilai: teks): teks {
-    biar setStr: teks = "";
-    untuk i dari 0 sampai panjang(setKolom) {
-        kalau i > 0 { setStr = setStr + ", "; }
-        setStr = setStr + setKolom[i] + " = '" + orm_escape(setNilai[i]) + "'";
-    }
-    kembali orm_kueri(s, "UPDATE " + tabel + " SET " + setStr + " WHERE " + whereKolom + " = '" + orm_escape(whereNilai) + "'");
-}
-
-// DELETE FROM tabel WHERE kolom = nilai
-fungsi orm_hapus(s: bulat, tabel: teks, kolom: teks, nilai: teks): teks {
-    kembali orm_kueri(s, "DELETE FROM " + tabel + " WHERE " + kolom + " = '" + orm_escape(nilai) + "'");
-}
+impor "./koneksi.tenun";
+impor "./kueri.tenun";
+impor "./crud.tenun";

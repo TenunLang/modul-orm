@@ -1,0 +1,24 @@
+// Koneksi & driver aktif.
+
+biar orm_driver: teks = "mysql";
+
+// driver = "mysql" | "postgres". Kembalikan handle, atau -1.
+fungsi orm_sambung(driver: teks, inang: teks, port: bulat, pengguna: teks, sandi: teks, db: teks): bulat {
+    orm_driver = driver;
+    kalau driver == "postgres" {
+        kembali pg_sambung(inang, port, pengguna, sandi, db);
+    }
+    biar s: bulat = mysql_sambung(inang, port, pengguna, sandi);
+    kalau s >= 0 {
+        mysql_gunakan(s, db);
+    }
+    kembali s;
+}
+
+fungsi orm_tutup(s: bulat): kosong {
+    kalau orm_driver == "postgres" {
+        pg_tutup(s);
+    } lain {
+        mysql_tutup(s);
+    }
+}

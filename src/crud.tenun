@@ -1,0 +1,45 @@
+// CRUD — membangun SQL aman (placeholder '?') lalu dieksekusi berparameter.
+// Nama tabel/kolom berasal dari kode (bukan input pengguna); nilai selalu berparameter.
+
+// SELECT * FROM tabel
+fungsi orm_semua(s: bulat, tabel: teks): teks {
+    kembali orm_kueri(s, "SELECT * FROM " + tabel);
+}
+
+// SELECT * FROM tabel WHERE kolom = nilai
+fungsi orm_cari(s: bulat, tabel: teks, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "SELECT * FROM " + tabel + " WHERE " + kolom + " = ?", [nilai]);
+}
+
+// INSERT INTO tabel (kolom...) VALUES (?...)
+fungsi orm_sisip(s: bulat, tabel: teks, kolom: []teks, nilai: []teks): teks {
+    biar k: teks = "";
+    biar ph: teks = "";
+    untuk i dari 0 sampai panjang(kolom) {
+        kalau i > 0 {
+            k = k + ", ";
+            ph = ph + ", ";
+        }
+        k = k + kolom[i];
+        ph = ph + "?";
+    }
+    kembali orm_jalan(s, "INSERT INTO " + tabel + " (" + k + ") VALUES (" + ph + ")", nilai);
+}
+
+// UPDATE tabel SET ... WHERE whereKolom = whereNilai
+fungsi orm_ubah(s: bulat, tabel: teks, setKolom: []teks, setNilai: []teks, whereKolom: teks, whereNilai: teks): teks {
+    biar setStr: teks = "";
+    untuk i dari 0 sampai panjang(setKolom) {
+        kalau i > 0 {
+            setStr = setStr + ", ";
+        }
+        setStr = setStr + setKolom[i] + " = ?";
+    }
+    biar params: []teks = dorong(setNilai, whereNilai);
+    kembali orm_jalan(s, "UPDATE " + tabel + " SET " + setStr + " WHERE " + whereKolom + " = ?", params);
+}
+
+// DELETE FROM tabel WHERE kolom = nilai
+fungsi orm_hapus(s: bulat, tabel: teks, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "DELETE FROM " + tabel + " WHERE " + kolom + " = ?", [nilai]);
+}
