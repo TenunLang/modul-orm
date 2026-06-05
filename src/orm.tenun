@@ -10,3 +10,4 @@ impor "./inti/kueri.tenun";
 impor "./crud/crud.tenun";
 impor "./crud/skema.tenun";
 impor "./crud/query.tenun";
+impor "./relasi/relasi.tenun";

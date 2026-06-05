@@ -65,6 +65,13 @@ Query lanjutan:
 - `orm_cari_satu(soket, tabel, kolom, nilai): teks` — WHERE + LIMIT 1.
 - `orm_urut(soket, tabel, kolom, arah, batas): teks` — ORDER BY + LIMIT (`arah` = "ASC"/"DESC").
 
+Relasi:
+
+- `orm_punya_banyak(soket, tabelAnak, fk, nilaiInduk): teks` — hasMany (anak yang `fk = nilaiInduk`).
+- `orm_milik(soket, tabelInduk, pk, nilaiFk): teks` — belongsTo (induk dengan `pk = nilaiFk`, LIMIT 1).
+- `orm_gabung(soket, kiri, kanan, kunciKiri, kunciKanan): teks` — INNER JOIN.
+- `orm_gabung_cari(soket, kiri, kanan, kunciKiri, kunciKanan, whereKolom, whereNilai): teks` — JOIN + filter berparameter.
+
 Query berparameter & baca hasil:
 
 - `orm_jalan(soket, sql, params: []teks): teks` — jalankan SQL dengan placeholder `?` (nilai dikirim terpisah, aman injeksi).
@@ -97,6 +104,8 @@ modul-orm/
       crud.tenun        orm_semua / orm_cari / orm_sisip / orm_ubah / orm_hapus
       skema.tenun       orm_buat_tabel / orm_hapus_tabel / orm_tambah_kolom
       query.tenun       orm_hitung / orm_cari_satu / orm_urut
+    relasi/
+      relasi.tenun      orm_punya_banyak / orm_milik / orm_gabung / orm_gabung_cari
 ```
 
 Impor antar-berkas relatif terhadap berkas pengimpor (mendukung subfolder, mis. `impor "./inti/koneksi.tenun";`).

@@ -1,0 +1,24 @@
+// Relasi antar-tabel: hasMany, belongsTo, dan JOIN.
+// Nilai selalu berparameter (aman injeksi); nama tabel/kolom dari kode.
+
+// hasMany — ambil semua baris "anak" yang foreign key-nya = nilaiInduk.
+// contoh: pengguna punya banyak pos => orm_punya_banyak(s, "pos", "pengguna_id", id)
+fungsi orm_punya_banyak(s: bulat, tabelAnak: teks, fk: teks, nilaiInduk: teks): teks {
+    kembali orm_jalan(s, "SELECT * FROM " + tabelAnak + " WHERE " + fk + " = ?", [nilaiInduk]);
+}
+
+// belongsTo — ambil satu baris "induk" berdasarkan primary key = nilai foreign key.
+// contoh: pos milik satu pengguna => orm_milik(s, "pengguna", "id", pengguna_id)
+fungsi orm_milik(s: bulat, tabelInduk: teks, pk: teks, nilaiFk: teks): teks {
+    kembali orm_jalan(s, "SELECT * FROM " + tabelInduk + " WHERE " + pk + " = ? LIMIT 1", [nilaiFk]);
+}
+
+// JOIN dua tabel: SELECT * FROM kiri INNER JOIN kanan ON kiri.kk = kanan.kn
+fungsi orm_gabung(s: bulat, kiri: teks, kanan: teks, kunciKiri: teks, kunciKanan: teks): teks {
+    kembali orm_kueri(s, "SELECT * FROM " + kiri + " INNER JOIN " + kanan + " ON " + kiri + "." + kunciKiri + " = " + kanan + "." + kunciKanan);
+}
+
+// JOIN + filter berparameter pada salah satu kolom (tulis "tabel.kolom" untuk hindari ambigu).
+fungsi orm_gabung_cari(s: bulat, kiri: teks, kanan: teks, kunciKiri: teks, kunciKanan: teks, whereKolom: teks, whereNilai: teks): teks {
+    kembali orm_jalan(s, "SELECT * FROM " + kiri + " INNER JOIN " + kanan + " ON " + kiri + "." + kunciKiri + " = " + kanan + "." + kunciKanan + " WHERE " + whereKolom + " = ?", [whereNilai]);
+}
