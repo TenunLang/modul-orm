@@ -1,54 +1,45 @@
 // Eksekusi query + baca hasil (dispatch per driver).
+// Hasil diberi penanda di byte pertama: "T" = format teks, "B" = format biner (MySQL prepared).
 
 // Query tanpa parameter — hanya untuk SQL tepercaya (DDL, "SELECT *").
-// JANGAN sisipkan nilai dari pengguna di sini; pakai orm_jalan.
 fungsi orm_kueri(s: bulat, sql: teks): teks {
     kalau orm_driver == "postgres" {
-        kembali pg_kueri(s, sql);
+        kembali "T" + pg_kueri(s, sql);
     }
-    kembali mysql_perintah(s, sql);
+    kembali "T" + mysql_perintah(s, sql);
 }
 
-// Query berparameter dengan placeholder '?'. Aman dari injeksi:
-// Postgres -> prepared ($1..), MySQL -> escape kuat + kutip. Nilai tak digabung mentah.
+// Query berparameter dengan placeholder '?'. Aman injeksi:
+// Postgres -> prepared ($1..), MySQL -> prepared statement biner. Nilai tak digabung mentah.
 fungsi orm_jalan(s: bulat, sql: teks, params: []teks): teks {
     kalau orm_driver == "postgres" {
         biar keluaran: teks = "";
         biar sisa: teks = sql;
         biar n: bulat = 1;
-        biar q: bulat = cari(sisa, "?");
-        selama q >= 0 {
-            keluaran = keluaran + potong(sisa, 0, q) + "$" + keTeks(n);
-            sisa = potong(sisa, q + 1, panjangTeks(sisa) - (q + 1));
+        biar qq: bulat = cari(sisa, "?");
+        selama qq >= 0 {
+            keluaran = keluaran + potong(sisa, 0, qq) + "$" + keTeks(n);
+            sisa = potong(sisa, qq + 1, panjangTeks(sisa) - (qq + 1));
             n = n + 1;
-            q = cari(sisa, "?");
+            qq = cari(sisa, "?");
         }
-        kembali pg_jalan(s, keluaran + sisa, params);
+        kembali "T" + pg_jalan(s, keluaran + sisa, params);
     }
-
-    biar keluaran2: teks = "";
-    biar sisa2: teks = sql;
-    biar i: bulat = 0;
-    biar q2: bulat = cari(sisa2, "?");
-    selama q2 >= 0 {
-        keluaran2 = keluaran2 + potong(sisa2, 0, q2) + "'" + mysql_escape(params[i]) + "'";
-        sisa2 = potong(sisa2, q2 + 1, panjangTeks(sisa2) - (q2 + 1));
-        i = i + 1;
-        q2 = cari(sisa2, "?");
-    }
-    kembali mysql_perintah(s, keluaran2 + sisa2);
+    kembali "B" + mysql_siapkan_jalan(s, sql, params);
 }
 
 fungsi orm_baris(hasil: teks): bulat {
-    kalau orm_driver == "postgres" {
-        kembali pg_jumlah_baris(hasil);
-    }
-    kembali mysql_jumlah_baris(hasil);
+    biar tag: teks = potong(hasil, 0, 1);
+    biar isi: teks = potong(hasil, 1, panjangTeks(hasil) - 1);
+    kalau tag == "B" { kembali mysql_bin_baris(isi); }
+    kalau orm_driver == "postgres" { kembali pg_jumlah_baris(isi); }
+    kembali mysql_jumlah_baris(isi);
 }
 
 fungsi orm_ambil(hasil: teks, baris: bulat, kolom: bulat): teks {
-    kalau orm_driver == "postgres" {
-        kembali pg_ambil(hasil, baris, kolom);
-    }
-    kembali mysql_ambil(hasil, baris, kolom);
+    biar tag: teks = potong(hasil, 0, 1);
+    biar isi: teks = potong(hasil, 1, panjangTeks(hasil) - 1);
+    kalau tag == "B" { kembali mysql_bin_ambil(isi, baris, kolom); }
+    kalau orm_driver == "postgres" { kembali pg_ambil(isi, baris, kolom); }
+    kembali mysql_ambil(isi, baris, kolom);
 }
