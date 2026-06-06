@@ -22,3 +22,24 @@ fungsi orm_gabung(s: bulat, kiri: teks, kanan: teks, kunciKiri: teks, kunciKanan
 fungsi orm_gabung_cari(s: bulat, kiri: teks, kanan: teks, kunciKiri: teks, kunciKanan: teks, whereKolom: teks, whereNilai: teks): teks {
     kembali orm_jalan(s, "SELECT * FROM " + kiri + " INNER JOIN " + kanan + " ON " + kiri + "." + kunciKiri + " = " + kanan + "." + kunciKanan + " WHERE " + whereKolom + " = ?", [whereNilai]);
 }
+
+// belongsToMany — relasi banyak-ke-banyak lewat tabel pivot.
+// contoh: pengguna <-> peran lewat pivot "pengguna_peran"
+//   orm_milik_banyak(s, "peran", "pengguna_peran", "pengguna_id", "peran_id", "id", id_pengguna)
+// Ambil semua baris `tabelTujuan` yang tertaut ke induk via pivot.
+fungsi orm_milik_banyak(s: bulat, tabelTujuan: teks, pivot: teks, fkLokal: teks, fkTujuan: teks, pkTujuan: teks, nilaiLokal: teks): teks {
+    kembali orm_jalan(s,
+        "SELECT " + tabelTujuan + ".* FROM " + tabelTujuan +
+        " INNER JOIN " + pivot + " ON " + tabelTujuan + "." + pkTujuan + " = " + pivot + "." + fkTujuan +
+        " WHERE " + pivot + "." + fkLokal + " = ?", [nilaiLokal]);
+}
+
+// Tautkan pasangan di tabel pivot (attach).
+fungsi orm_tautkan(s: bulat, pivot: teks, fkLokal: teks, nilaiLokal: teks, fkTujuan: teks, nilaiTujuan: teks): teks {
+    kembali orm_jalan(s, "INSERT INTO " + pivot + " (" + fkLokal + ", " + fkTujuan + ") VALUES (?, ?)", [nilaiLokal, nilaiTujuan]);
+}
+
+// Lepas tautan pasangan di tabel pivot (detach).
+fungsi orm_lepas(s: bulat, pivot: teks, fkLokal: teks, nilaiLokal: teks, fkTujuan: teks, nilaiTujuan: teks): teks {
+    kembali orm_jalan(s, "DELETE FROM " + pivot + " WHERE " + fkLokal + " = ? AND " + fkTujuan + " = ?", [nilaiLokal, nilaiTujuan]);
+}

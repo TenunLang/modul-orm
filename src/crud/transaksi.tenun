@@ -1,0 +1,29 @@
+// Transaksi & id sisipan terakhir (driver-aware).
+
+// Mulai transaksi. MySQL: START TRANSACTION, Postgres: BEGIN.
+fungsi orm_transaksi(s: bulat): teks {
+    kalau orm_driver == "postgres" {
+        kembali orm_kueri(s, "BEGIN");
+    }
+    kembali orm_kueri(s, "START TRANSACTION");
+}
+
+// Simpan permanen.
+fungsi orm_komit(s: bulat): teks {
+    kembali orm_kueri(s, "COMMIT");
+}
+
+// Batalkan semua perubahan transaksi.
+fungsi orm_batal(s: bulat): teks {
+    kembali orm_kueri(s, "ROLLBACK");
+}
+
+// ID auto-increment terakhir pada koneksi ini (panggil tepat setelah INSERT).
+// MySQL: LAST_INSERT_ID(), Postgres: LASTVAL().
+fungsi orm_id_terakhir(s: bulat): bulat {
+    biar sql: teks = "SELECT LAST_INSERT_ID()";
+    kalau orm_driver == "postgres" { sql = "SELECT LASTVAL()"; }
+    biar h: teks = orm_kueri(s, sql);
+    kalau orm_baris(h) < 1 { kembali -1; }
+    kembali keBulat(orm_ambil(h, 0, 0));
+}

@@ -21,3 +21,28 @@ fungsi orm_hapus_tabel(s: bulat, tabel: teks): teks {
 fungsi orm_tambah_kolom(s: bulat, tabel: teks, kolom: teks, tipe: teks): teks {
     kembali orm_kueri(s, "ALTER TABLE " + tabel + " ADD COLUMN " + kolom + " " + tipe);
 }
+
+// Tipe kolom id auto-increment PRIMARY KEY (driver-aware).
+//   MySQL  : INT AUTO_INCREMENT PRIMARY KEY
+//   Postgres: SERIAL PRIMARY KEY
+// Pakai sebagai tipe pada orm_buat_tabel / orm_kolom.
+fungsi orm_tipe_id(): teks {
+    kalau orm_driver == "postgres" { kembali "SERIAL PRIMARY KEY"; }
+    kembali "INT AUTO_INCREMENT PRIMARY KEY";
+}
+
+// CREATE INDEX idx_<tabel>_<kolom> ON tabel (kolom)
+fungsi orm_indeks(s: bulat, tabel: teks, kolom: teks): teks {
+    kembali orm_kueri(s, "CREATE INDEX idx_" + tabel + "_" + kolom + " ON " + tabel + " (" + kolom + ")");
+}
+
+// CREATE UNIQUE INDEX uniq_<tabel>_<kolom> ON tabel (kolom)
+fungsi orm_indeks_unik(s: bulat, tabel: teks, kolom: teks): teks {
+    kembali orm_kueri(s, "CREATE UNIQUE INDEX uniq_" + tabel + "_" + kolom + " ON " + tabel + " (" + kolom + ")");
+}
+
+// ALTER TABLE ... ADD CONSTRAINT FOREIGN KEY (fk) REFERENCES induk(pk)
+fungsi orm_kunci_asing(s: bulat, tabel: teks, fk: teks, induk: teks, pk: teks): teks {
+    kembali orm_kueri(s, "ALTER TABLE " + tabel + " ADD CONSTRAINT fk_" + tabel + "_" + fk +
+        " FOREIGN KEY (" + fk + ") REFERENCES " + induk + " (" + pk + ")");
+}

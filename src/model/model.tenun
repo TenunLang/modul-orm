@@ -198,3 +198,45 @@ fungsi orm_validasi(m: peta, baris: peta): bool {
     }
     kembali benar;
 }
+
+// ---- findOrCreate / updateOrCreate ----
+
+// Kembalikan baris yang cocok; bila tak ada, sisipkan `baris` lalu kembalikan.
+fungsi orm_cari_atau_buat(s: bulat, m: peta, kolom: teks, nilai: teks, baris: peta): peta {
+    biar ada: peta = orm_model_cari_satu(s, m, kolom, nilai);
+    kalau petaPunya(ada, kolom) { kembali ada; }
+    orm_simpan(s, m, baris);
+    kembali orm_model_cari_satu(s, m, kolom, nilai);
+}
+
+// Update bila cocok, kalau tidak sisipkan.
+fungsi orm_perbarui_atau_buat(s: bulat, m: peta, kolom: teks, nilai: teks, baris: peta): teks {
+    biar ada: peta = orm_model_cari_satu(s, m, kolom, nilai);
+    kalau petaPunya(ada, kolom) {
+        kembali orm_model_ubah(s, m, baris, kolom, nilai);
+    }
+    kembali orm_simpan(s, m, baris);
+}
+
+// ---- Soft delete (hapus lunak) ----
+
+// Tandai model memakai soft-delete + tambah kolom penanda waktu hapus.
+fungsi orm_pakai_softdelete(m: peta): peta {
+    m["@softdelete"] = "1";
+    kembali orm_kolom(m, "dihapus_pada", "TIMESTAMP");
+}
+
+// Hapus lunak: isi dihapus_pada (baris tetap ada di DB).
+fungsi orm_model_hapus_lunak(s: bulat, m: peta, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "UPDATE " + m["@tabel"] + " SET dihapus_pada = CURRENT_TIMESTAMP WHERE " + kolom + " = ?", [nilai]);
+}
+
+// Pulihkan baris yang di-soft-delete.
+fungsi orm_model_pulihkan(s: bulat, m: peta, kolom: teks, nilai: teks): teks {
+    kembali orm_jalan(s, "UPDATE " + m["@tabel"] + " SET dihapus_pada = NULL WHERE " + kolom + " = ?", [nilai]);
+}
+
+// Ambil hanya baris aktif (belum di-soft-delete).
+fungsi orm_model_semua_aktif(s: bulat, m: peta): teks {
+    kembali orm_kueri(s, "SELECT " + m["@kolom"] + " FROM " + m["@tabel"] + " WHERE dihapus_pada IS NULL");
+}

@@ -1,0 +1,61 @@
+// Aksi tulis lanjutan: sisip massal, upsert, sisip + ambil id.
+// Semua nilai berparameter; nama tabel/kolom dari kode.
+
+// Bulk INSERT: satu pernyataan untuk banyak baris.
+//   kolom = ["nama","umur"]; baris = [["a","20"],["b","30"]]
+fungsi orm_sisip_banyak(s: bulat, tabel: teks, kolom: []teks, baris: [][]teks): teks {
+    biar k: teks = "";
+    biar phRow: teks = "";
+    untuk i dari 0 sampai panjang(kolom) {
+        kalau i > 0 { k = k + ", "; phRow = phRow + ", "; }
+        k = k + kolom[i];
+        phRow = phRow + "?";
+    }
+    biar nilai: teks = "";
+    biar params: []teks = [];
+    untuk r dari 0 sampai panjang(baris) {
+        kalau r > 0 { nilai = nilai + ", "; }
+        nilai = nilai + "(" + phRow + ")";
+        untuk c dari 0 sampai panjang(baris[r]) {
+            params = dorong(params, baris[r][c]);
+        }
+    }
+    kembali orm_jalan(s, "INSERT INTO " + tabel + " (" + k + ") VALUES " + nilai, params);
+}
+
+// UPSERT (insert atau update bila bentrok pada `konflik`).
+//   MySQL  : ON DUPLICATE KEY UPDATE col=VALUES(col)
+//   Postgres: ON CONFLICT (konflik) DO UPDATE SET col=EXCLUDED.col
+fungsi orm_upsert(s: bulat, tabel: teks, kolom: []teks, nilai: []teks, konflik: teks): teks {
+    biar k: teks = "";
+    biar ph: teks = "";
+    untuk i dari 0 sampai panjang(kolom) {
+        kalau i > 0 { k = k + ", "; ph = ph + ", "; }
+        k = k + kolom[i];
+        ph = ph + "?";
+    }
+    biar sql: teks = "INSERT INTO " + tabel + " (" + k + ") VALUES (" + ph + ")";
+
+    kalau orm_driver == "postgres" {
+        biar setStr: teks = "";
+        untuk i dari 0 sampai panjang(kolom) {
+            kalau i > 0 { setStr = setStr + ", "; }
+            setStr = setStr + kolom[i] + " = EXCLUDED." + kolom[i];
+        }
+        sql = sql + " ON CONFLICT (" + konflik + ") DO UPDATE SET " + setStr;
+    } lain {
+        biar setStr: teks = "";
+        untuk i dari 0 sampai panjang(kolom) {
+            kalau i > 0 { setStr = setStr + ", "; }
+            setStr = setStr + kolom[i] + " = VALUES(" + kolom[i] + ")";
+        }
+        sql = sql + " ON DUPLICATE KEY UPDATE " + setStr;
+    }
+    kembali orm_jalan(s, sql, nilai);
+}
+
+// INSERT lalu kembalikan id auto-increment baris baru.
+fungsi orm_sisip_id(s: bulat, tabel: teks, kolom: []teks, nilai: []teks): bulat {
+    orm_sisip(s, tabel, kolom, nilai);
+    kembali orm_id_terakhir(s);
+}

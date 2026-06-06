@@ -1,0 +1,178 @@
+// Query builder berantai (chainable) — ala Eloquent/Knex.
+// State disimpan dalam `peta`; semua nilai WHERE berparameter (aman injeksi).
+// Nama tabel/kolom/operator berasal dari kode, bukan input pengguna.
+//
+// Contoh:
+//   biar b: peta = qb("pengguna");
+//   b = qb_dimana(b, "umur", ">=", "18");
+//   b = qb_seperti(b, "nama", "%budi%");
+//   b = qb_urut(b, "umur", "DESC");
+//   b = qb_halaman(b, 2, 10);
+//   biar hasil: teks = qb_ambil(s, b);
+
+fungsi qb(tabel: teks): peta {
+    biar b: peta = peta{};
+    b["@tabel"] = tabel;
+    b["@pilih"] = "*";
+    b["@where"] = "";
+    b["@urut"] = "";
+    b["@kelompok"] = "";
+    b["@batas"] = "";
+    b["@lewati"] = "";
+    biar awal: []teks = [];
+    b["@params"] = awal;
+    kembali b;
+}
+
+// Pilih kolom tertentu (CSV), mis. "id, nama, umur".
+fungsi qb_pilih(b: peta, kolom: teks): peta {
+    b["@pilih"] = kolom;
+    kembali b;
+}
+
+fungsi _qb_tambah(b: peta, kata: teks, frag: teks): peta {
+    kalau panjangTeks(b["@where"]) > 0 {
+        b["@where"] = b["@where"] + " " + kata + " " + frag;
+    } lain {
+        b["@where"] = frag;
+    }
+    kembali b;
+}
+
+fungsi _qb_param(b: peta, nilai: teks): peta {
+    biar p: []teks = b["@params"];
+    p = dorong(p, nilai);
+    b["@params"] = p;
+    kembali b;
+}
+
+// WHERE kolom <op> ? (AND). op: "=", "!=", ">", "<", ">=", "<=", "LIKE".
+fungsi qb_dimana(b: peta, kolom: teks, op: teks, nilai: teks): peta {
+    b = _qb_tambah(b, "AND", kolom + " " + op + " ?");
+    kembali _qb_param(b, nilai);
+}
+
+// OR kolom <op> ?
+fungsi qb_atau(b: peta, kolom: teks, op: teks, nilai: teks): peta {
+    b = _qb_tambah(b, "OR", kolom + " " + op + " ?");
+    kembali _qb_param(b, nilai);
+}
+
+// kolom LIKE ? (AND).
+fungsi qb_seperti(b: peta, kolom: teks, pola: teks): peta {
+    b = _qb_tambah(b, "AND", kolom + " LIKE ?");
+    kembali _qb_param(b, pola);
+}
+
+// kolom IN (?, ?, ...) (AND).
+fungsi qb_dimana_dalam(b: peta, kolom: teks, nilai: []teks): peta {
+    biar ph: teks = "";
+    untuk i dari 0 sampai panjang(nilai) {
+        kalau i > 0 { ph = ph + ", "; }
+        ph = ph + "?";
+        b = _qb_param(b, nilai[i]);
+    }
+    kembali _qb_tambah(b, "AND", kolom + " IN (" + ph + ")");
+}
+
+// kolom BETWEEN ? AND ? (AND).
+fungsi qb_antara(b: peta, kolom: teks, bawah: teks, atas: teks): peta {
+    b = _qb_tambah(b, "AND", kolom + " BETWEEN ? AND ?");
+    b = _qb_param(b, bawah);
+    kembali _qb_param(b, atas);
+}
+
+// kolom IS NULL / IS NOT NULL (AND).
+fungsi qb_kosong(b: peta, kolom: teks): peta {
+    kembali _qb_tambah(b, "AND", kolom + " IS NULL");
+}
+fungsi qb_tidak_kosong(b: peta, kolom: teks): peta {
+    kembali _qb_tambah(b, "AND", kolom + " IS NOT NULL");
+}
+
+// ORDER BY kolom arah ("ASC"/"DESC"). Bisa dipanggil berkali-kali.
+fungsi qb_urut(b: peta, kolom: teks, arah: teks): peta {
+    kalau panjangTeks(b["@urut"]) > 0 {
+        b["@urut"] = b["@urut"] + ", " + kolom + " " + arah;
+    } lain {
+        b["@urut"] = kolom + " " + arah;
+    }
+    kembali b;
+}
+
+// GROUP BY kolom.
+fungsi qb_kelompok(b: peta, kolom: teks): peta {
+    b["@kelompok"] = kolom;
+    kembali b;
+}
+
+fungsi qb_batas(b: peta, n: bulat): peta {
+    b["@batas"] = keTeks(n);
+    kembali b;
+}
+fungsi qb_lewati(b: peta, n: bulat): peta {
+    b["@lewati"] = keTeks(n);
+    kembali b;
+}
+
+// Paginasi: halaman (mulai 1) dengan `perHalaman` baris.
+fungsi qb_halaman(b: peta, halaman: bulat, perHalaman: bulat): peta {
+    b["@batas"] = keTeks(perHalaman);
+    b["@lewati"] = keTeks((halaman - 1) * perHalaman);
+    kembali b;
+}
+
+// Susun SQL akhir (tanpa eksekusi) — berguna untuk debug.
+fungsi qb_sql(b: peta): teks {
+    biar sql: teks = "SELECT " + b["@pilih"] + " FROM " + b["@tabel"];
+    kalau panjangTeks(b["@where"]) > 0 { sql = sql + " WHERE " + b["@where"]; }
+    kalau panjangTeks(b["@kelompok"]) > 0 { sql = sql + " GROUP BY " + b["@kelompok"]; }
+    kalau panjangTeks(b["@urut"]) > 0 { sql = sql + " ORDER BY " + b["@urut"]; }
+    kalau panjangTeks(b["@batas"]) > 0 { sql = sql + " LIMIT " + b["@batas"]; }
+    kalau panjangTeks(b["@lewati"]) > 0 { sql = sql + " OFFSET " + b["@lewati"]; }
+    kembali sql;
+}
+
+// Eksekusi SELECT, kembalikan handle hasil.
+fungsi qb_ambil(s: bulat, b: peta): teks {
+    biar p: []teks = b["@params"];
+    kalau panjang(p) == 0 { kembali orm_kueri(s, qb_sql(b)); }
+    kembali orm_jalan(s, qb_sql(b), p);
+}
+
+// Ambil baris pertama (LIMIT 1).
+fungsi qb_pertama(s: bulat, b: peta): teks {
+    b["@batas"] = "1";
+    kembali qb_ambil(s, b);
+}
+
+// COUNT(*) dengan filter builder.
+fungsi qb_hitung(s: bulat, b: peta): bulat {
+    biar sql: teks = "SELECT COUNT(*) FROM " + b["@tabel"];
+    kalau panjangTeks(b["@where"]) > 0 { sql = sql + " WHERE " + b["@where"]; }
+    biar p: []teks = b["@params"];
+    biar h: teks = "";
+    kalau panjang(p) == 0 { h = orm_kueri(s, sql); } lain { h = orm_jalan(s, sql, p); }
+    kalau orm_baris(h) < 1 { kembali 0; }
+    kembali keBulat(orm_ambil(h, 0, 0));
+}
+
+// Agregat (SUM/AVG/MIN/MAX) dengan filter builder.
+fungsi qb_agregat(s: bulat, b: peta, fungsi_sql: teks, kolom: teks): teks {
+    biar sql: teks = "SELECT " + fungsi_sql + "(" + kolom + ") FROM " + b["@tabel"];
+    kalau panjangTeks(b["@where"]) > 0 { sql = sql + " WHERE " + b["@where"]; }
+    biar p: []teks = b["@params"];
+    biar h: teks = "";
+    kalau panjang(p) == 0 { h = orm_kueri(s, sql); } lain { h = orm_jalan(s, sql, p); }
+    kalau orm_baris(h) < 1 { kembali "0"; }
+    kembali orm_ambil(h, 0, 0);
+}
+
+// DELETE dengan filter builder. Tanpa WHERE = hapus semua (hati-hati).
+fungsi qb_hapus(s: bulat, b: peta): teks {
+    biar sql: teks = "DELETE FROM " + b["@tabel"];
+    kalau panjangTeks(b["@where"]) > 0 { sql = sql + " WHERE " + b["@where"]; }
+    biar p: []teks = b["@params"];
+    kalau panjang(p) == 0 { kembali orm_kueri(s, sql); }
+    kembali orm_jalan(s, sql, p);
+}

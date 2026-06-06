@@ -10,5 +10,8 @@ impor "./inti/kueri.tenun";
 impor "./crud/crud.tenun";
 impor "./crud/skema.tenun";
 impor "./crud/query.tenun";
+impor "./crud/transaksi.tenun";
+impor "./crud/tindakan.tenun";
+impor "./builder/builder.tenun";
 impor "./relasi/relasi.tenun";
 impor "./model/model.tenun";

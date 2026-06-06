@@ -1,0 +1,40 @@
+// Contoh: query builder berantai + transaksi + upsert + paginasi.
+impor "orm";
+
+biar db: bulat = orm_sambung("mysql", "127.0.0.1", 3306, "root", "", "mysql");
+kalau db < 0 {
+    cetak("gagal terhubung");
+} lain {
+    orm_kueri(db, "CREATE TEMPORARY TABLE produk (id INT PRIMARY KEY, nama VARCHAR(50), harga INT, kota VARCHAR(30))");
+
+    // transaksi + bulk insert
+    orm_transaksi(db);
+    orm_sisip_banyak(db, "produk", ["id", "nama", "harga", "kota"], [
+        ["1", "Kopi", "25000", "Bandung"],
+        ["2", "Teh", "15000", "Jakarta"],
+        ["3", "Susu", "30000", "Bandung"]
+    ]);
+    orm_komit(db);
+
+    // upsert (id 2 sudah ada -> update harga)
+    orm_upsert(db, "produk", ["id", "nama", "harga", "kota"], ["2", "Teh", "18000", "Jakarta"], "id");
+
+    // query builder: produk Bandung harga >= 20000, urut termahal, paginasi
+    biar b: peta = qb("produk");
+    b = qb_dimana(b, "kota", "=", "Bandung");
+    b = qb_dimana(b, "harga", ">=", "20000");
+    b = qb_urut(b, "harga", "DESC");
+    b = qb_halaman(b, 1, 10);
+
+    cetak("SQL: " + qb_sql(b));
+    biar h: teks = qb_ambil(db, b);
+    cetak("cocok: " + keTeks(orm_baris(h)));
+    untuk i dari 0 sampai orm_baris(h) {
+        cetak(orm_ambil(h, i, 1) + " = " + orm_ambil(h, i, 2));
+    }
+
+    cetak("total produk: " + keTeks(qb_hitung(db, qb("produk"))));
+    cetak("rata harga: " + qb_agregat(db, qb("produk"), "AVG", "harga"));
+
+    orm_tutup(db);
+}

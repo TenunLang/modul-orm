@@ -1,11 +1,11 @@
 {
   "nama": "orm",
-  "versi": "0.1.0",
-  "deskripsi": "ORM untuk Tenun: satu API CRUD untuk MySQL & PostgreSQL.",
+  "versi": "0.2.0",
+  "deskripsi": "ORM untuk Tenun: query builder berantai, transaksi, upsert/bulk, paginasi, agregasi, relasi (incl. many-to-many), soft-delete. MySQL & PostgreSQL.",
   "lisensi": "MIT",
   "penulis": "TenunLang",
   "berkas": "src/orm.tenun",
-  "kataKunci": ["orm", "basisdata", "mysql", "postgres", "crud"],
+  "kataKunci": ["orm", "basisdata", "mysql", "postgres", "crud", "query-builder", "transaksi", "upsert"],
   "butuh": {
     "mysql": "^0.1.0",
     "postgres": "^0.1.0"
