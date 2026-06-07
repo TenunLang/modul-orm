@@ -1,0 +1,7 @@
+impor "../src/orm.tenun";
+biar b: peta = qb("users");
+b = qb_pilih(b, "id, nama");
+b = qb_dimana(b, "umur", ">", "18");
+biar sql: teks = qb_sql(b);
+tegas(cari(sql, "SELECT id, nama FROM users") >= 0, "select from");
+tegas(cari(sql, "WHERE") >= 0, "klausa where");
