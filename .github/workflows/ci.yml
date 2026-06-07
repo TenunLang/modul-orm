@@ -18,4 +18,5 @@ jobs:
           git clone --depth 1 https://github.com/TenunLang/modul-mysql tenun_modul/mysql
           git clone --depth 1 https://github.com/TenunLang/modul-postgres tenun_modul/postgres
       - name: Uji unit
-        run: "$HOME/.tenun/bin/tenun" check .
+        run: |
+          "$HOME/.tenun/bin/tenun" check .
